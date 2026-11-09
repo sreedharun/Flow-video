@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Past Video Jobs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-intro">
+        <h1>Past Video Jobs</h1>
+        <p class="subtitle">Access previously generated scripts, scene video clips, and document exports.</p>
+    </div>
+
+    {% if jobs %}
+    <div class="history-list">
+        {% for job in jobs %}
+        <div class="card history-card">
+            <div class="history-info">
+                <div class="history-meta">
+                    <span class="badge badge-{{ job.status }}">{{ job.status }}</span>
+                    <span class="text-muted">{{ job.created_at }}</span>
+                    <span class="text-muted">&bull; {{ job.language }} &bull; {{ job.num_scenes }} scenes &bull; {{ job.aspect_ratio }}</span>
+                </div>
+                <h3 class="history-title">{{ job.title or job.topic }}</h3>
+                <p class="history-topic">{{ job.topic[:140] }}{% if job.topic|length > 140 %}...{% endif %}</p>
+            </div>
+
+            <div class="history-actions">
+                {% if job.status == 'completed' %}
+                <a href="/results/{{ job.id }}" class="btn btn-primary">
+                    👁️ View Clips & Narration
+                </a>
+                <a href="/output/{{ job.id }}/{{ job.id }}_all_files.zip" class="btn btn-secondary" download>
+                    📦 ZIP
+                </a>
+                {% elif job.status == 'processing' %}
+                <a href="/progress/{{ job.id }}" class="btn btn-warning">
+                    ⏳ Live Progress
+                </a>
+                {% else %}
+                <a href="/results/{{ job.id }}" class="btn btn-secondary">
+                    View Job
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty-card">
+        <p class="empty-icon">📂</p>
+        <h3>No past jobs found</h3>
+        <p>You haven't generated any videos yet. Click below to start your first project!</p>
+        <a href="/" class="btn btn-primary btn-large">Create New Video</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

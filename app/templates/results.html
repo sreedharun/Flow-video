@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Results - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="results-header-card card">
+        <div class="results-header-content">
+            <div>
+                <a href="/history" class="back-link">&larr; Back to Past Jobs</a>
+                <h1>{{ job.title }}</h1>
+                <p class="subtitle">
+                    Narration Language: <strong>{{ job.language }}</strong> &bull;
+                    Aspect Ratio: <strong>{{ job.aspect_ratio }}</strong> &bull;
+                    Target Length: <strong>{{ job.target_length }}s</strong>
+                </p>
+            </div>
+            <div class="download-group">
+                <a href="/output/{{ job.id }}/{{ job.id }}_all_files.zip" class="btn btn-success btn-large" download>
+                    <span class="btn-icon">📦</span>
+                    <span class="btn-text">Download All as ZIP</span>
+                </a>
+                <div class="doc-links">
+                    <a href="/output/{{ job.id }}/script.docx" class="btn-link" download>📄 script.docx</a>
+                    <a href="/output/{{ job.id }}/script.txt" class="btn-link" download>📝 script.txt</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% set failed_scenes = job.scenes | selectattr('status', 'equalto', 'failed') | list %}
+    {% if failed_scenes %}
+    <div class="card retry-banner-card">
+        <div class="retry-banner-inner">
+            <div class="retry-banner-text">
+                <span class="retry-warning-icon">⚠️</span>
+                <div>
+                    <h3>{{ failed_scenes|length }} Scene(s) Failed</h3>
+                    <p>All previously completed clips are safely preserved. You can retry only the failed scenes now.</p>
+                </div>
+            </div>
+            <button type="button" id="btn-retry-failed" class="btn btn-warning btn-large">
+                <span class="btn-icon">🔄</span>
+                <span class="btn-text">Retry Failed Scenes Only ({{ failed_scenes|length }})</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="results-guidance">
+        <p>💡 <strong>Editor Workflow:</strong> Each video clip below is paired side-by-side with its narration script in {{ job.language }}. Download the ZIP bundle, import the clips into Premiere / CapCut / DaVinci, and record or paste each narration line over its corresponding clip.</p>
+    </div>
+
+    <!-- Video clips next to narration -->
+    <div class="scenes-results-grid">
+        {% for s in job.scenes %}
+        <div class="scene-result-card card">
+            <div class="scene-result-header">
+                <h3>Scene {{ s.scene_number }}: {{ s.clip_filename }}</h3>
+                <span class="badge badge-duration">{{ s.target_length }} seconds</span>
+            </div>
+
+            <div class="scene-result-body">
+                <!-- Video player column -->
+                <div class="scene-video-wrapper">
+                    {% if s.clip_filename %}
+                    <video controls preload="metadata" class="scene-video-player">
+                        <source src="/output/{{ job.id }}/{{ s.clip_filename }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="video-actions">
+                        <a href="/output/{{ job.id }}/{{ s.clip_filename }}" download class="btn-secondary btn-small">
+                            ⬇️ Download Merged Video (MP4)
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="video-placeholder" style="padding: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
+                        <p style="font-weight: 500; color: #1e293b; margin-bottom: 2px;">🎬 Video Generated in Google Flow</p>
+                        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">Saved on your Flow project board.</p>
+                        <a href="{{ job.flow_project_url or 'https://flow.google.com' }}" target="_blank" class="btn btn-secondary btn-small">Open Flow Board ↗</a>
+                    </div>
+                    {% endif %}
+
+                    <div class="audio-narration-player" style="margin-top: 10px; padding: 10px; background: #f1f5f9; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong style="font-size: 0.82rem; color: #334155;">🎙️ Spoken Tamil Voiceover:</strong>
+                            <a href="/output/{{ job.id }}/scene_{{ '%02d' % s.scene_number }}_voice.mp3" download class="btn-link" style="font-size: 0.8rem; font-weight: 600;">⬇️ Download Audio (MP3)</a>
+                        </div>
+                        <audio controls preload="metadata" style="width: 100%; height: 32px;">
+                            <source src="/output/{{ job.id }}/scene_{{ '%02d' % s.scene_number }}_voice.mp3" type="audio/mp3">
+                        </audio>
+                    </div>
+                </div>
+
+                <!-- Script & narration column -->
+                <div class="scene-text-wrapper">
+                    <div class="narration-box">
+                        <div class="box-label">Voiceover Narration ({{ job.language }}):</div>
+                        <div class="narration-content" dir="auto">{{ s.narration_text }}</div>
+                    </div>
+
+                    <div class="prompt-box">
+                        <div class="box-label">English Flow Video Prompt:</div>
+                        <div class="prompt-content">{{ s.video_prompt }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const retryBtn = document.getElementById('btn-retry-failed');
+if (retryBtn) {
+    retryBtn.addEventListener('click', async () => {
+        retryBtn.disabled = true;
+        retryBtn.innerText = 'Starting Retry...';
+        try {
+            const resp = await fetch('/api/job/{{ job.id }}/retry-failed', { method: 'POST' });
+            const data = await resp.json();
+            if (data.status === 'ok') {
+                window.location.href = '/progress/{{ job.id }}';
+            } else {
+                alert('Retry failed: ' + data.message);
+                retryBtn.disabled = false;
+            }
+        } catch (e) {
+            alert('Request error: ' + e.message);
+            retryBtn.disabled = false;
+        }
+    });
+}
+</script>
+{% endblock %}

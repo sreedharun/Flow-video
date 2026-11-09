@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Settings & Google Login{% endblock %}
+
+{% block content %}
+<div class="container max-w-700">
+    <div class="page-intro">
+        <h1>Settings & Google Authentication</h1>
+        <p class="subtitle">Connect your Google account once to enable automated Flow video generation.</p>
+    </div>
+
+    <!-- System Health Check Card -->
+    <div class="card settings-card">
+        <div class="settings-header">
+            <span class="icon-circle">🩺</span>
+            <div>
+                <h2>System Health & Diagnostics</h2>
+                <p class="section-subtext">Real-time status of all prerequisites, environment, and dependencies.</p>
+            </div>
+        </div>
+
+        <div class="health-checklist">
+            {% for key, item in health.items() %}
+            <div class="health-item {% if item.ok %}health-ok{% else %}health-bad{% endif %}">
+                <div class="health-icon">{% if item.ok %}✅{% else %}❌{% endif %}</div>
+                <div class="health-info">
+                    <div class="health-title">{{ item.label }}</div>
+                    <div class="health-detail">{{ item.detail }}</div>
+                </div>
+                <div class="health-badge {% if item.ok %}badge-ok{% else %}badge-bad{% endif %}">
+                    {% if item.ok %}READY{% else %}ATTENTION{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Google Login Card -->
+    <div class="card settings-card">
+        <div class="settings-header">
+            <span class="icon-circle">🔐</span>
+            <div>
+                <h2>Google Flow Login (One-Time Setup)</h2>
+                <p class="section-subtext">Click the button below to open a real Chrome browser. Sign in to your Google Account on Google Labs / Flow. Once logged in, your session is saved in the local <code>browser_profile</code> folder on your PC. <strong>Your password is never stored or seen by the app.</strong></p>
+            </div>
+        </div>
+
+        <div class="settings-body">
+            <div class="login-action-box">
+                <button type="button" id="btn-launch-login" class="btn btn-primary btn-large">
+                    <span class="btn-icon">🌐</span>
+                    <span class="btn-text">Open Browser to Sign In to Google</span>
+                </button>
+                <p id="login-status-msg" class="field-hint" style="margin-top: 10px;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Configuration Card -->
+    <div class="card settings-card">
+        <div class="settings-header">
+            <span class="icon-circle">⚙️</span>
+            <div>
+                <h2>Automation Preferences</h2>
+                <p class="section-subtext">Configure browser visibility and video generation provider.</p>
+            </div>
+        </div>
+
+        <form id="settings-form" class="studio-form">
+            <div class="form-group">
+                <label for="provider_select"><strong>Active Video Generation Provider</strong></label>
+                <select id="provider_select" name="provider_select">
+                    <option value="flow" {% if current_provider == 'flow' %}selected{% endif %}>Google Flow Automation (Playwright Browser)</option>
+                    <option value="mock" {% if current_provider == 'mock' %}selected{% endif %}>Mock Video Provider (Instant testing, free)</option>
+                </select>
+                <span class="field-hint">Use "Mock" to test the UI, script writing, and Word/ZIP generation without using Google Flow.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="headless_toggle"><strong>Browser Execution Mode</strong></label>
+                <select id="headless_toggle" name="headless_toggle">
+                    <option value="false" {% if not headless %}selected{% endif %}>Visible Window (Recommended - see Flow running in real-time)</option>
+                    <option value="true" {% if headless %}selected{% endif %}>Headless (Hidden in background)</option>
+                </select>
+                <span class="field-hint">Visible mode lets you watch Flow as it generates each scene.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="gemini_key_display"><strong>Gemini API Key</strong></label>
+                <input type="text" id="gemini_key_display" name="gemini_key_display" value="{{ masked_gemini_key }}" placeholder="Paste your Gemini API key (AI Studio)">
+                <span class="field-hint">Stored securely in your local <code>.env</code> file.</span>
+            </div>
+
+            <div class="action-bar-primary">
+                <button type="button" id="btn-save-settings" class="btn btn-success">
+                    Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('btn-launch-login').addEventListener('click', async () => {
+    const statusMsg = document.getElementById('login-status-msg');
+    const launchBtn = document.getElementById('btn-launch-login');
+    
+    launchBtn.disabled = true;
+    statusMsg.innerText = "⏳ Launching browser... checking Chrome / Chromium channels...";
+    statusMsg.style.color = "#1a73e8";
+    
+    try {
+        const resp = await fetch('/api/browser/open-login', { method: 'POST' });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'ok') {
+            statusMsg.innerHTML = "✅ <strong>" + data.message + "</strong>";
+            statusMsg.style.color = "#137333";
+        } else {
+            statusMsg.innerHTML = "❌ <strong>Error launching browser:</strong> " + (data.message || 'Unknown error');
+            statusMsg.style.color = "#d93025";
+        }
+    } catch (e) {
+        statusMsg.innerHTML = "❌ <strong>Connection error:</strong> " + e.message;
+        statusMsg.style.color = "#d93025";
+    } finally {
+        setTimeout(() => { launchBtn.disabled = false; }, 3000);
+    }
+});
+
+document.getElementById('btn-save-settings').addEventListener('click', async () => {
+    const provider = document.getElementById('provider_select').value;
+    const headless = document.getElementById('headless_toggle').value === 'true';
+    const gemini_key = document.getElementById('gemini_key_display').value;
+
+    const resp = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, headless, gemini_key })
+    });
+    const res = await resp.json();
+    if (res.status === 'ok') {
+        alert('Settings saved successfully!');
+        window.location.reload();
+    } else {
+        alert('Failed to save settings: ' + res.message);
+    }
+});
+</script>
+{% endblock %}

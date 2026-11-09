@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Generating Videos - Job #{{ job.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-intro">
+        <div class="status-header">
+            <div>
+                <h1>Generating Video Clips</h1>
+                <p class="subtitle">{{ job.title }} &bull; Job ID: <code>{{ job.id }}</code></p>
+            </div>
+            <div class="header-status-actions">
+                <span id="overall-badge" class="badge badge-{{ job.status }}">{{ job.status|upper }}</span>
+                <button type="button" id="btn-cancel-job" class="btn btn-danger btn-small" style="display: {% if job.status in ['processing', 'queued'] %}inline-flex{% else %}none{% endif %};">
+                    🛑 Cancel Job
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2col">
+        <!-- Left: Scene Progress Cards -->
+        <div class="scenes-progress-col">
+            <h2 class="col-title">Scene Status</h2>
+            <div id="progress-scenes-list" class="progress-scenes-list">
+                {% for s in job.scenes %}
+                <div class="scene-status-card" id="scene-card-{{ s.scene_number }}" data-scene="{{ s.scene_number }}">
+                    <div class="scene-card-top">
+                        <span class="scene-label">Scene {{ s.scene_number }}</span>
+                        <span class="scene-badge badge-{{ s.status }}" id="scene-badge-{{ s.scene_number }}">{{ s.status }}</span>
+                    </div>
+                    <div class="scene-card-body">
+                        <p class="scene-text-narration"><strong>Narration:</strong> {{ s.narration_text }}</p>
+                        <p class="scene-text-prompt"><strong>Prompt:</strong> {{ s.video_prompt }}</p>
+                        <div class="scene-card-footer" id="scene-footer-{{ s.scene_number }}">
+                            {% if s.status == 'done' and s.clip_filename %}
+                            <span class="ready-file">✓ {{ s.clip_filename }} ready</span>
+                            {% elif s.status == 'generating' %}
+                            <div class="mini-spinner"></div>
+                            <span>Generating in Google Flow...</span>
+                            {% elif s.status == 'failed' %}
+                            <span class="text-error">Generation failed ({{ s.error_message or 'Timeout/Error' }})</span>
+                            {% else %}
+                            <span class="text-muted">Queued...</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right: Real-time Terminal Log & Complete Actions -->
+        <div class="logs-col">
+            <div class="card log-box-card">
+                <div class="log-box-header">
+                    <h3>Live Activity Log</h3>
+                    <span class="live-dot" title="Listening for updates"></span>
+                </div>
+                <div id="terminal-logs" class="terminal-logs">
+                    {% for l in logs %}
+                    <div class="log-line log-{{ l.level|lower }}">
+                        <span class="log-time">{{ l.timestamp }}</span>
+                        <span class="log-msg">{{ l.message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Complete Banner (hidden until completed) -->
+            <div id="completion-card" class="card complete-card" style="display: {% if job.status == 'completed' %}block{% else %}none{% endif %};">
+                <div class="complete-inner">
+                    <span class="complete-icon">🎉</span>
+                    <h3>Video Generation Finished!</h3>
+                    <p>All clips and documentation are generated.</p>
+                    <div class="complete-actions">
+                        <a href="/results/{{ job.id }}" class="btn btn-success btn-large">
+                            👁️ View Video Clips & Narration Matching
+                        </a>
+                        <a href="/output/{{ job.id }}/{{ job.id }}_all_files.zip" class="btn btn-primary" download>
+                            📦 Download All as ZIP
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const jobId = "{{ job.id }}";
+    const initialStatus = "{{ job.status }}";
+</script>
+<script src="/static/js/progress.js"></script>
+{% endblock %}

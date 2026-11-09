@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Create New Video Script & Clips{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-intro">
+        <h1>Create Multi-Scene Video</h1>
+        <p class="subtitle">Enter your idea, generate the script with Gemini, review/edit the prompts, and automate Google Flow creation.</p>
+    </div>
+
+    <!-- Step 1: Video Concept Form -->
+    <section class="card form-card">
+        <div class="card-header">
+            <span class="step-badge">Step 1</span>
+            <h2>Video Settings & Idea</h2>
+        </div>
+
+        <form id="script-form" class="studio-form">
+            <div class="form-group full-width">
+                <label for="topic"><strong>Topic / Idea</strong> <span class="required">*</span></label>
+                <textarea id="topic" name="topic" rows="3" placeholder="e.g. A young chef in Chennai discovering an ancient spice recipe that transforms his small restaurant..." required></textarea>
+                <span class="field-hint">Describe what the video is about, the storyline, key actions, or advertising message.</span>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="language_select"><strong>Narration Language</strong></label>
+                    <select id="language_select" name="language_select">
+                        <option value="English" selected>English</option>
+                        <option value="Tamil">Tamil (தமிழ்)</option>
+                        <option value="Hindi">Hindi (हिंदी)</option>
+                        <option value="Telugu">Telugu (తెలుగు)</option>
+                        <option value="Malayalam">Malayalam (മലയാളം)</option>
+                        <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                        <option value="custom">Other / Custom...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="custom_language_group" style="display: none;">
+                    <label for="custom_language">Custom Language</label>
+                    <input type="text" id="custom_language" name="custom_language" placeholder="Enter language name">
+                </div>
+
+                <div class="form-group">
+                    <label for="num_scenes"><strong>Number of Scenes (1 - 8)</strong></label>
+                    <div class="stepper-input">
+                        <input type="number" id="num_scenes" name="num_scenes" min="1" max="8" value="4">
+                        <span class="stepper-hint">scenes</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><strong>Target Length per Scene</strong></label>
+                    <div class="radio-pill-group">
+                        <label class="radio-pill">
+                            <input type="radio" name="target_length" value="5" checked>
+                            <span>5 Seconds</span>
+                        </label>
+                        <label class="radio-pill">
+                            <input type="radio" name="target_length" value="8">
+                            <span>8 Seconds</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="style_select"><strong>Visual Style</strong></label>
+                    <select id="style_select" name="style_select">
+                        <option value="cinematic" selected>Cinematic (Realistic 4K film lighting)</option>
+                        <option value="cartoon">Cartoon / 3D Animation</option>
+                        <option value="realistic">Realistic Documentary</option>
+                        <option value="ad/commercial">Commercial / High-end Advertisement</option>
+                        <option value="custom">Custom Style...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="custom_style_group" style="display: none;">
+                    <label for="custom_style">Custom Visual Style</label>
+                    <input type="text" id="custom_style" name="custom_style" placeholder="e.g. Cyberpunk watercolor, vintage 90s film">
+                </div>
+
+                <div class="form-group">
+                    <label for="tone"><strong>Voiceover Tone</strong></label>
+                    <select id="tone" name="tone">
+                        <option value="informative" selected>Informative & Clear</option>
+                        <option value="emotional">Emotional & Inspiring</option>
+                        <option value="funny">Funny & Lighthearted</option>
+                        <option value="advertisement">Persuasive / Advertisement</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><strong>Aspect Ratio</strong></label>
+                    <div class="radio-pill-group">
+                        <label class="radio-pill">
+                            <input type="radio" name="aspect_ratio" value="9:16" checked>
+                            <span>9:16 (Vertical / Shorts / Reels - Default)</span>
+                        </label>
+                        <label class="radio-pill">
+                            <input type="radio" name="aspect_ratio" value="16:9">
+                            <span>16:9 (Landscape / YouTube)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="flow_model"><strong>Flow Model & Credit Tier</strong></label>
+                    <select id="flow_model" name="flow_model">
+                        <option value="omni_1.1_flash" selected>⚡ Omni 1.1 Flash (Low Cost - Recommended)</option>
+                        <option value="omni_1.2_flash">✨ Omni 1.2 Flash (High Quality)</option>
+                    </select>
+                    <span class="field-hint">Omni 1.1 Flash uses fewer credits while maintaining great quality.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="resolution"><strong>Video Resolution (Credit Cost)</strong></label>
+                    <select id="resolution" name="resolution">
+                        <option value="360p" selected>⚡ 360p (Only 6 credits per clip - Recommended)</option>
+                        <option value="720p">📺 720p HD (12 credits per clip)</option>
+                        <option value="1080p">🎬 1080p Full HD (30 credits per clip)</option>
+                    </select>
+                    <span class="field-hint">360p runs faster and uses only <strong>6 credits</strong> per shot!</span>
+                </div>
+            </div>
+
+            <!-- Existing Google Flow Project URL -->
+            <div class="form-group full-width">
+                <label for="flow_project_url"><strong>Google Flow Project URL (Recommended for Saved Characters)</strong></label>
+                <input type="text" id="flow_project_url" name="flow_project_url" value="{{ default_project_url }}" placeholder="e.g. https://flow.google.com/project/5bbffd82-f0b0-4148-ab6d-389035675fcb">
+                <span class="field-hint">Paste your existing Google Flow project URL here so all scenes are generated inside that project where your character and <strong>Always Approve</strong> settings already exist!</span>
+            </div>
+
+            <!-- Optional Character -->
+            <div class="form-group full-width character-section">
+                <label for="character_desc"><strong>Character / Avatar Handle (Optional)</strong></label>
+                <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <input type="text" id="character_desc" name="character_desc" placeholder="e.g. @me (to use your Google Flow avatar) or @CharacterName or detailed description" style="flex: 1;">
+                    <button type="button" class="btn btn-secondary" style="white-space: nowrap; padding: 6px 12px; font-size: 0.85rem;" onclick="document.getElementById('character_desc').value='@me'">Use @me Avatar</button>
+                </div>
+                <span class="field-hint">💡 <strong>To use your created personal avatar in Flow:</strong> Enter <code>@me</code> (or click the button above). Google Flow will automatically use your saved face and likeness in all scene videos. If you named a custom character in Flow, enter <code>@YourCharacterName</code>.</span>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="ref_image"><strong>Reference Image for Character (Optional)</strong></label>
+                <input type="file" id="ref_image" name="ref_image" accept="image/*">
+                <span class="field-hint">Optional photo or art to guide Flow character appearance.</span>
+            </div>
+
+            <div class="action-bar-primary">
+                <button type="button" id="btn-generate-script" class="btn btn-primary btn-large">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Generate Script with Gemini</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Loading Indicator -->
+    <div id="script-loading" class="card loading-card" style="display: none;">
+        <div class="spinner"></div>
+        <h3>Gemini is crafting your scenes...</h3>
+        <p>Creating narration in your chosen language and consistent Flow prompts in English.</p>
+    </div>
+
+    <!-- Step 2: Editable Script Review -->
+    <section id="script-editor-section" class="card review-card" style="display: none;">
+        <div class="card-header">
+            <span class="step-badge">Step 2</span>
+            <h2>Review & Edit Script</h2>
+            <p class="section-subtext">You can edit the wording, narration, and Flow prompts below before starting video generation.</p>
+        </div>
+
+        <div class="editor-header-fields">
+            <div class="form-group full-width">
+                <label for="edit-title"><strong>Project Title</strong></label>
+                <input type="text" id="edit-title" class="input-large">
+            </div>
+            <div class="form-group full-width">
+                <label for="edit-character"><strong>Character Profile (Repeated in all video prompts for consistency)</strong></label>
+                <textarea id="edit-character" rows="2"></textarea>
+            </div>
+        </div>
+
+        <div id="scenes-container" class="scenes-list">
+            <!-- Scene cards dynamically inserted here -->
+        </div>
+
+        <!-- Big Launch Buttons -->
+        <div class="launch-actions">
+            <button type="button" id="btn-test-single" class="btn btn-warning btn-large">
+                <span class="btn-icon">🧪</span>
+                <span class="btn-text">Test with 1 Scene Only</span>
+            </button>
+            <button type="button" id="btn-start-full" class="btn btn-success btn-large">
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text">Start All Video Generation</span>
+            </button>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+{% endblock %}

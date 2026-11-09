@@ -1,0 +1,43 @@
+# Environment variables
+.env
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Persistent browser profile (contains user session data)
+browser_profile/
+flow_user_data/
+
+# Job output folders and generated files
+output/
+
+# User uploaded reference photos
+uploads/
+
+# Local SQLite database
+jobs.db
+jobs.db-journal
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Media & test artifacts
+*.png
+*.jpg
+*.jpeg
+*.mp3
+*.mp4
+test_*.py
+verify_*.py
+
+# IDE
+.vscode/
+.idea/
