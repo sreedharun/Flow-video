@@ -78,8 +78,8 @@ CRITICAL DIRECTIVES:
    - You MUST embed this EXACT character/avatar reference into EVERY single scene's video_prompt to maintain visual character consistency across Google Flow generations.
 
 3. VIDEO PROMPTS (Always in English):
-   - Format: Style: {style}, Aspect ratio: {aspect_ratio}.
-   - Content: Specific camera angle (e.g. cinematic medium shot, low angle, macro close-up, smooth tracking shot), lighting (e.g. warm golden hour, volumetric studio light), setting details, and physical action.
+   - Format: Style: {style}, Aspect ratio: {aspect_ratio}, Duration: {target_length} seconds.
+   - Content: Specific camera angle (e.g. cinematic medium shot, low angle, macro close-up, smooth tracking shot), lighting (e.g. warm golden hour, volumetric studio light), setting details, and physical action timed smoothly for a {target_length}-second clip.
    - AUDIO / SPEECH INSTRUCTION: Include the dialogue and voiceover directly in the video prompt so Google Flow generates the character speech and audio along with the video: Audio & Dialogue: The character speaks in {language} saying: "<narration text>", clear natural voiceover audio with matching ambient sound.
 """
 

@@ -399,7 +399,9 @@ class FlowDriver:
             if not prompt_input:
                 raise RuntimeError("Could not find Flow prompt input textarea. Please check if you are logged in to Google Flow.")
 
-            # Explicit prompt instructions: 360p, Omni 1.1 Flash, and 9:16 Reels format
+            # Explicit prompt instructions: duration, 360p, Omni 1.1 Flash, and 9:16 Reels format
+            dur_seconds = int(duration) if duration else 5
+            dur_tag = f"with duration of {dur_seconds} seconds ({dur_seconds}s long clip)"
             model_tag = "using model Omni 1.1 Flash" if "1.1" in flow_model.lower() else "using model Omni 1.2 Flash"
             res_tag = f"at {resolution} resolution" if resolution else "at 360p resolution"
             if "9:16" in aspect_ratio or "reels" in str(aspect_ratio).lower():
@@ -417,9 +419,28 @@ class FlowDriver:
                 flow_prompt = f"{flow_prompt}. {audio_instruction}"
 
             if not flow_prompt.lower().startswith("create a video") and not flow_prompt.lower().startswith("generate a video"):
-                flow_prompt = f"Create a video {res_tag} {model_tag} {aspect_tag}: {flow_prompt}"
+                flow_prompt = f"Create an {dur_seconds}-second video ({dur_tag}) {res_tag} {model_tag} {aspect_tag}: {flow_prompt}"
             else:
-                flow_prompt = f"{flow_prompt} ({res_tag}, {model_tag}, {aspect_tag})"
+                flow_prompt = f"{flow_prompt} ({dur_tag}, {res_tag}, {model_tag}, {aspect_tag})"
+
+            # If user requested 8 seconds, also check for any Flow UI toggle/chip for 8s
+            if dur_seconds >= 8:
+                try:
+                    dur_chips = [
+                        self._page.locator("button:has-text('8s')"),
+                        self._page.locator("button:has-text('8 sec')"),
+                        self._page.locator("[role='button']:has-text('8s')"),
+                        self._page.locator("button[aria-label*='8s' i]"),
+                        self._page.locator("button[aria-label*='8 second' i]"),
+                    ]
+                    for chip in dur_chips:
+                        if await chip.count() > 0 and await chip.first.is_visible():
+                            await chip.first.click()
+                            log("Selected '8s' duration chip in Flow UI.")
+                            await asyncio.sleep(0.5)
+                            break
+                except Exception as chip_err:
+                    logger.debug(f"Duration chip check: {chip_err}")
 
             log(f"Entering video prompt: {flow_prompt[:70]}...")
             await prompt_input.fill("")
