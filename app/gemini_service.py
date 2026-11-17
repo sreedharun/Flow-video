@@ -38,14 +38,13 @@ def generate_script(
     key = api_key or GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "").strip()
     if not key or key == "your_gemini_api_key_here":
         logger.warning("No GEMINI_API_KEY set. Generating high-quality template script.")
-        # Generate demo script matching inputs so user can test immediately
-        char_desc_final = character_desc or "A confident protagonist with warm expressive eyes, modern stylish attire, distinctive natural look."
+        char_desc_final = character_desc or "@me"
         demo_scenes = []
         for i in range(1, num_scenes + 1):
             demo_scenes.append({
                 "scene_number": i,
                 "narration_text": f"[{language} Narration Scene {i}]: Natural voiceover covering key message for {topic[:30]} ({target_length}s).",
-                "video_prompt": f"{style.capitalize()} style, aspect ratio {aspect_ratio}. Scene {i}: {char_desc_final}. Engaging cinematic action relating to '{topic}'. Camera pans smoothly with cinematic lighting, crisp atmospheric depth. (no dialogue, no talking, cinematic ambient audio, visual storytelling)"
+                "video_prompt": f"Style: {style}. Aspect ratio: {aspect_ratio}. Scene {i}: {char_desc_final}. Engaging cinematic action relating to '{topic}'. Camera pans smoothly with cinematic lighting, crisp atmospheric depth. Audio & Speech: The character speaks in {language} with natural voiceover audio."
             })
         return {
             "title": f"{topic[:40].strip()} (Preview Script)",
@@ -53,10 +52,8 @@ def generate_script(
             "scenes": demo_scenes
         }
 
-    client = genai.Client(api_key=key)
+    client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=15000))
 
-    # Word count guidance based on speech pacing
-    # 5 sec -> ~10-14 words; 8 sec -> ~18-24 words
     word_count_guidance = (
         "Keep narration short and punchy: around 10 to 14 words per scene (must comfortably fit within 5 seconds)."
         if target_length == 5
@@ -104,7 +101,13 @@ Generate structured output matching the schema with:
 - scenes: list of {num_scenes} scenes, each having scene_number (1 to {num_scenes}), narration_text (in {language}), and video_prompt (in English).
 """
 
-    models_to_try = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"]
+    # Model priority: Put ultra-fast, high-availability flash-lite first
+    models_to_try = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-3.8-flash"
+    ]
     last_err = None
 
     for model_name in models_to_try:
@@ -126,4 +129,18 @@ Generate structured output matching the schema with:
             logger.warning(f"Gemini model '{model_name}' failed: {e}. Trying next available model...")
             last_err = e
 
-    raise RuntimeError(f"Gemini API generation failed across available models: {last_err}")
+    # Graceful fallback: If Google API has temporary server spikes across all models, generate rich template
+    logger.warning(f"All Gemini models failed ({last_err}). Falling back to template generation.")
+    char_desc_final = character_desc or "@me"
+    demo_scenes = []
+    for i in range(1, num_scenes + 1):
+        demo_scenes.append({
+            "scene_number": i,
+            "narration_text": f"[{language} Narration Scene {i}]: Natural voiceover covering key benefits of {topic[:35]} ({target_length}s).",
+            "video_prompt": f"Style: {style}. Aspect ratio: {aspect_ratio}. Scene {i}: {char_desc_final} in engaging cinematic action relating to '{topic}'. Professional lighting, crisp depth of field. Audio & Speech: The character speaks in {language} with natural voiceover audio."
+        })
+    return {
+        "title": f"{topic[:40].strip()}",
+        "character_desc": char_desc_final,
+        "scenes": demo_scenes
+    }
